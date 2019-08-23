@@ -26,7 +26,7 @@ public class CasterCollider{
 	internal CasterCollider(PolygonCollider2D coll){
 		collider = coll;
 		transform = coll.transform;
-		TotalPointsCount = coll.GetTotalPointCount();
+		TotalPointsCount = coll.GetTotalPointCount();// Return the total number of points in the polygon in all paths.
 		//points = new Vector2[TotalPointsCount];
 		//points = coll.points;
 		type = CasterType.PolygonCollider2d;

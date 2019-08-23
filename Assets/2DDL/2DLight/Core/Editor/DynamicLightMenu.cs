@@ -173,7 +173,7 @@
 			s.Version = AssetUtility.LoadProperty("version", tmpAsset);
 			s.setMainMaterial(m);
 			s.Rebuild();
-			s.Segments = 5;
+			s.Segments = 5; //修改最小值
 			s.RangeAngle = 107;
 			s.SolidColor = true;
 			s.LightColor = new Color(229/255f,1f,171/255f);

@@ -142,11 +142,12 @@ namespace DynamicLight2D
 								collider = co;
 								//Debug.Log(collider);
 								worldPoints = new Vector3[collider.TotalPointsCount];
+                                //将collider的局部坐标转换成世界坐标
 								for (int i = 0; i < collider.points.Length; i++)
 										worldPoints[i] = collider.transform.TransformPoint(collider.points[i]);
 
-								lastPos = Vector3.forward;
-								lastRot = Quaternion.identity;
+								lastPos = Vector3.forward; //(0,0,1)
+								lastRot = Quaternion.identity; //(0,0,0,1)
 						}
 
 						/// <summary>
@@ -870,17 +871,21 @@ namespace DynamicLight2D
 				{
 					initMeshFilterAndRenderer();
 					Rebuild();
-				}
 
-				private void Start(){
+                    polygonCollider2D = this.GetComponent<PolygonCollider2D>();
+                }
+
+                private PolygonCollider2D polygonCollider2D;
+
+
+                private void Start(){
 
 						_lastPos = transform.position;
 						_lastRot = transform.rotation;
 						_lastRadius = LightRadius;
-
-
-						// -- Set Layer mask --//
-						setLayerMask();
+                        
+                        // -- Set Layer mask --//
+                        setLayerMask();
 
 						//initMeshFilterAndRenderer();
 
@@ -1142,6 +1147,13 @@ namespace DynamicLight2D
 
 								// Generate vectors for light mesh
 								GenerateLightVectors();
+
+                                //重新绘制collider ==========================================================================
+                                List<Vector2> colliderPoints = GetColliderPoints();
+                                if (polygonCollider2D!=null&&colliderPoints != null&&colliderPoints.Count > 0)
+                                {
+                                    polygonCollider2D.SetPath(0, colliderPoints.ToArray());
+                                }
 							
 								// Reorder the verts based on vector angle
 								SwapVertOrders(ref _allVerts);
@@ -2028,15 +2040,47 @@ namespace DynamicLight2D
 						return ang;
 				}
 
+        //by lyl code
 
+        public List<Vector2> GetColliderPoints()
+        {
+            List<Vector2> points = new List<Vector2>();
+            //角度不是180°倍数时，需要增加顶点
+            if (((int)RangeAngle % 180)!=0)
+            {
+                Vector3 vector3 = transform.InverseTransformPoint(transform.position);
+                points.Add(new Vector2(vector3.x, vector3.y));
+            }
+            if (defaultSegment!=0 && colliderPoints.Count == defaultSegment)
+            {
+                for (int i = 0; i < colliderPoints.Count; i++)
+                {
+                    Vert vert = colliderPoints[i];
+                    Vector2 temp = new Vector2(vert.pos.x,vert.pos.y);
+                    points.Add(temp);
+                }
+            }
+            return points;
+        }
 
-				Vert []vertLightVector;
+        /// <summary>
+        /// 保存光照的边界点
+        /// </summary>
+        private static List<Vert> colliderPoints;
+        private static int defaultSegment = 1;
+
+                Vert []vertLightVector;
 				/// <summary>
 				///  Generate vectors for light cast into _allVerts
 				/// </summary>
 				private void GenerateLightVectors()
 				{
-						var theta = 0;
+                        //新增代码
+                        colliderPoints = new List<Vert>();
+                        defaultSegment = 1;
+                        defaultSegment += Segments;
+                        //=======================================================================
+                        var theta = 0;
 						float amount = RangeAngle / Segments;
 
 						if(vertLightVector == null || vertLightVector.Length != Segments+1)
@@ -2080,7 +2124,8 @@ namespace DynamicLight2D
 								vertLightVector[i].angle = PseudoAngle(vertLightVector[i].pos.x, vertLightVector[i].pos.y);
 								_allVerts.Add(vertLightVector[i]);
 
-
+                                //新增代码
+                                colliderPoints.Add(vertLightVector[i]);
 
 
 
@@ -2088,18 +2133,13 @@ namespace DynamicLight2D
 									Debug.DrawRay(transform.position, (transform.TransformPoint(vertLightVector[i].pos) - transform.position), Color.grey);
 
 
-
-
-
-
-
-
 						}
 
 						// Step 4: Sort each vertice by angle (along sweep ray 0 - 2PI)
 						if (_sortAngles)
 								_allVerts.Sort(Collider.VertComparer);
-				}
+                        colliderPoints.Sort(Collider.VertComparer);
+        }
 
 				/// <summary>
 				/// Auxiliar step (change order vertices close to light first in position when has same direction) 
